@@ -1,4 +1,4 @@
-#Tariffs
+####Tariffs ####
 import pandas as pd
 
 
@@ -71,7 +71,7 @@ for y in years:
     # Vérifier si toutes les lignes sont NaN pour les deux colonnes
     if df_merged[[fn_col, ar_col]].isna().all().all():
         cols_to_drop.extend([fn_col, ar_col])
-        print(f"Year {y} is completely empty → will drop")
+        print(f"Year {y} is empty")
 
 # Supprimer les colonnes vides
 df_merged = df_merged.drop(columns=cols_to_drop)
@@ -79,3 +79,22 @@ df_merged = df_merged.drop(columns=cols_to_drop)
 
 
 df_merged.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/Tarifs douaniers (MFN vs Applied).csv")
+
+
+#### Tarifs product by product ####
+import pandas as pd
+
+path_product_1988 = "/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data/2662006_A69F6B0B-8/MFN_H0_EUN_1988/JobID-43639_MFN_H0_EUN_1988.CSV"
+df_1988 = pd.read_csv(path_product_1988)
+
+# df_prod = fichier product-level
+df_country_year = df_1988.groupby(['Reporter_ISO_N', 'Year']).apply(
+    lambda x: (x['SimpleAverage'] * x['TotalNoOfValidLines']).sum() / x['TotalNoOfValidLines'].sum()
+)
+
+df_country_year
+
+
+
+
+#### Macro indicators ####
