@@ -121,10 +121,10 @@ df_Indic = df_Indic.drop(columns=to_drop)
 df_Indic = df_Indic.dropna(subset=["OBS_VALUE"])
 
 df_Indic["year"] = df_Indic["TIME_PERIOD"].str.slice(0, 4).astype(int)
-df_Indic = df_Indic[df_Indic["year"] >= 1980]
-df_Indic
+df_Indic = df_Indic[df_Indic["year"] >= 1970]
+df_Indic.to_parquet("Indicateurs.parquet")
 
-df_Indic.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/Indicateurs macro.csv")
+#df_Indic.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/Indicateurs macro.csv")
 
 
 
