@@ -131,4 +131,4 @@ df_Indic.to_parquet("Indicateurs.parquet")
 import pandas as pd
 
 df = pd.read_parquet("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/Indicateurs.parquet")
-df["year"].unique()
+df["REF_AREA"].unique()
