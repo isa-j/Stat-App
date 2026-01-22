@@ -81,6 +81,11 @@ df_merged = df_merged.drop(columns=cols_to_drop)
 df_merged.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/Tarifs douaniers (MFN vs Applied).csv")
 
 
+
+
+
+
+
 #### Tarifs product by product ####
 import pandas as pd
 
@@ -97,4 +102,31 @@ df_country_year
 
 
 
+
+
+
 #### Macro indicators ####
+import pandas as pd
+path_aa = "/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data/OECD.SDD.STES,DSD_KEI@DF_KEI,+all.csv"
+
+df_Indic= pd.read_csv(path_aa)
+#print(df_Indic_aa.columns)
+#df_Indic_aa["Période temporelle"].unique()
+
+#for col in df_Indic_aa.columns : 
+    #print (df_Indic_aa[col].unique())
+
+to_drop = ["STRUCTURE_ID", "ACTION", "Zone de référence", "FREQ", "MEASURE", "UNIT_MEASURE", "ACTIVITY", "ADJUSTMENT", "TRANSFORMATION", "Période temporelle", "Valeur d'observation", "OBS_STATUS", "Période de base", "Décimales", "OBS_STATUS", "UNIT_MULT", "Multiplicateur d'unité", "DECIMALS", "STRUCTURE_NAME", "STRUCTURE"]
+df_Indic = df_Indic.drop(columns=to_drop)
+df_Indic = df_Indic.dropna(subset=["OBS_VALUE"])
+
+df_Indic["year"] = df_Indic["TIME_PERIOD"].str.slice(0, 4).astype(int)
+df_Indic = df_Indic[df_Indic["year"] >= 1980]
+df_Indic
+
+df_Indic.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/Indicateurs macro.csv")
+
+
+
+
+
