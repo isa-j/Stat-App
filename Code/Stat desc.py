@@ -126,7 +126,7 @@ df_final = df_final.merge(
     how='left'
 )
 
-
+#df_final.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/Indicators and tarifs V3.csv")
 
 # Crée le tarif retardé d'un an puis la diff de tarif
 #df_final['tariff_lag1'] = (
