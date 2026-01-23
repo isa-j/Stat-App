@@ -1,0 +1,32 @@
+                                     OLS Regression Results                                    
+===============================================================================================
+Dep. Variable:     Q("Produit intérieur brut, volume")   R-squared:                       0.338
+Model:                                             OLS   Adj. R-squared:                  0.332
+Method:                                  Least Squares   F-statistic:                     34.84
+Date:                                 Fri, 23 Jan 2026   Prob (F-statistic):           1.26e-36
+Time:                                         22:20:24   Log-Likelihood:                -1663.5
+No. Observations:                                  664   AIC:                             3341.
+Df Residuals:                                      657   BIC:                             3372.
+Df Model:                                            6                                         
+Covariance Type:                                   HC1                                         
+=================================================================================================================================
+                                                                    coef    std err          z      P>|z|      [0.025      0.975]
+---------------------------------------------------------------------------------------------------------------------------------
+Intercept                                                         3.9149      0.679      5.766      0.000       2.584       5.246
+delta_tariff                                                      0.1977      0.104      1.904      0.057      -0.006       0.401
+Q("Taux de chômage")                                             -0.1900      0.037     -5.108      0.000      -0.263      -0.117
+Q("Balance des transactions courantes en pourcentage du PIB")    -0.1190      0.024     -5.004      0.000      -0.166      -0.072
+Q("Taux de change nominal")                                       0.0008      0.000      2.554      0.011       0.000       0.001
+Q("Prix à la consommation")                                      -0.0153      0.013     -1.167      0.243      -0.041       0.010
+Q("Cours des actions")                                            0.0926      0.007     13.227      0.000       0.079       0.106
+==============================================================================
+Omnibus:                      103.671   Durbin-Watson:                   1.695
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):              993.415
+Skew:                           0.331   Prob(JB):                    1.92e-216
+Kurtosis:                       8.956   Cond. No.                     2.49e+03
+==============================================================================
+
+Notes:
+[1] Standard Errors are heteroscedasticity robust (HC1)
+[2] The condition number is large, 2.49e+03. This might indicate that there are
+strong multicollinearity or other numerical problems.
