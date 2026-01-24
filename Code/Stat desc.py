@@ -242,4 +242,8 @@ with open("regression_results.txt", "w") as f:
 
 
 
+####Piste d'amélioration de la régression : 
+# faire sur le delta d'avant, 
+# pour représenter le délai avant que les effets
+#du protectionnisme se fassent sentir
 
