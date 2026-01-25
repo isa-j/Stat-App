@@ -163,6 +163,8 @@ plt.show()
 
 
 #Peu concluant, on va passer à des régressions contrôlées avec un peu de taff de preprocessing avant
+import pandas as pd
+df_final = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/Indicators and tarifs V3.csv")
 
 
 ####Réorganisation du df
@@ -207,8 +209,11 @@ df_wide = df_sub.pivot_table(
     values='OBS_VALUE'
 ).reset_index()
 
+
+
 tariffs = df_sub[['Country Name', 'Country Code', 'year', 'tariff', 'tariff_lag1', 'delta_tariff']].drop_duplicates()
-df_reg = df_wide.merge(tariffs, on=['Country Name', 'year'], how='left')
+
+df_reg = df_wide.merge(tariffs, on=['Country Name', 'year', 'Country Code'], how='left')
 
 df_reg.head(100)
 
@@ -247,3 +252,35 @@ with open("regression_results.txt", "w") as f:
 # pour représenter le délai avant que les effets
 #du protectionnisme se fassent sentir
 
+#On crée le lag du delta_tariff
+df_reg = df_reg.sort_values(["Country Code", "year"])
+
+df_reg["delta_tariff_lag1"] = (
+    df_reg
+    .groupby("Country Code")["delta_tariff"]
+    .shift(1)
+)
+#Petit checkup
+df_reg[["Country Name", "year", "delta_tariff", "delta_tariff_lag1"]].head(15)
+
+
+len(df_reg)
+#Puis régression longue
+import statsmodels.formula.api as smf
+
+formula = """
+Q("Produit intérieur brut, volume") ~
+delta_tariff_lag1 +
+Q("Taux de chômage") +
+Q("Prix à la consommation") +
+Q("M3") 
+"""
+
+
+
+
+model = smf.ols(formula, data=df_reg).fit(cov_type="HC1")
+print(model.summary())
+
+with open("regression2_delta_tarifs_lag.txt", "w") as f:
+    f.write(model.summary().as_text())

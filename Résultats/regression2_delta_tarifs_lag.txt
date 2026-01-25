@@ -1,0 +1,28 @@
+                                     OLS Regression Results                                    
+===============================================================================================
+Dep. Variable:     Q("Produit intérieur brut, volume")   R-squared:                       0.060
+Model:                                             OLS   Adj. R-squared:                  0.051
+Method:                                  Least Squares   F-statistic:                     4.577
+Date:                                 Sun, 25 Jan 2026   Prob (F-statistic):            0.00127
+Time:                                         17:07:40   Log-Likelihood:                -928.93
+No. Observations:                                  389   AIC:                             1868.
+Df Residuals:                                      384   BIC:                             1888.
+Df Model:                                            4                                         
+Covariance Type:                                   HC1                                         
+===============================================================================================
+                                  coef    std err          z      P>|z|      [0.025      0.975]
+-----------------------------------------------------------------------------------------------
+Intercept                       7.7409      1.341      5.774      0.000       5.113      10.368
+delta_tariff_lag1              -0.1084      0.082     -1.315      0.189      -0.270       0.053
+Q("Taux de chômage")           -0.0153      0.058     -0.264      0.792      -0.129       0.098
+Q("Prix à la consommation")    -0.1350      0.037     -3.691      0.000      -0.207      -0.063
+Q("M3")                         0.0277      0.014      2.021      0.043       0.001       0.055
+==============================================================================
+Omnibus:                       92.447   Durbin-Watson:                   1.747
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):              287.404
+Skew:                          -1.072   Prob(JB):                     3.90e-63
+Kurtosis:                       6.624   Cond. No.                         605.
+==============================================================================
+
+Notes:
+[1] Standard Errors are heteroscedasticity robust (HC1)
