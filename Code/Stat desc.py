@@ -166,6 +166,8 @@ plt.show()
 import pandas as pd
 df_final = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/Indicators and tarifs V3.csv")
 
+df_final[df_final["Mesure"] == "Produit intérieur brut, volume"]["Unité de mesure"].unique()
+
 
 ####Réorganisation du df
 
@@ -284,3 +286,6 @@ print(model.summary())
 
 with open("regression2_delta_tarifs_lag.txt", "w") as f:
     f.write(model.summary().as_text())
+
+
+df_reg[ "Produit intérieur brut, volume"].unique()
