@@ -1,4 +1,4 @@
-                                     OLS Regression Results                                    
+∏                                     OLS Regression Results                                    
 ===============================================================================================
 Dep. Variable:     Q("Produit intérieur brut, volume")   R-squared:                       0.338
 Model:                                             OLS   Adj. R-squared:                  0.332
