@@ -2,17 +2,17 @@
 import pandas as pd
 
 
-path_AR = "/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data/API_TM.TAX.MRCH.WM.AR.ZS_DS2_en_excel_v2_129989.xls"
+path_AR = "/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data/API_TM.TAX.AR.xls"
 df_AR = pd.read_excel(path_AR, header = 3)
 
 
-path_FN = "/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data/API_TM.TAX.MRCH.WM.FN.ZS_DS2_en_excel_v2_128528.xls"
+path_FN = "/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data/API_TM.TAX.FN.xls"
 df_FN = pd.read_excel(path_FN, header = 3)
 
 print(df_FN.columns)
 print(df_AR.columns)
 
-
+df_AR["Indicator Name"].unique()
 
 
 # Colonnes d'identité (à adapter si besoin)
