@@ -219,6 +219,7 @@ df_reg = df_wide.merge(tariffs, on=['Country Name', 'year', 'Country Code'], how
 
 df_reg.head(100)
 
+df_reg.to_csv("df_long_indicators vs tarifs.csv")
 
 len(df_reg)
 
@@ -289,3 +290,6 @@ with open("regression2_delta_tarifs_lag.txt", "w") as f:
 
 
 df_reg[ "Produit intérieur brut, volume"].unique()
+
+
+
