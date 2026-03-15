@@ -8,7 +8,16 @@ import matplotlib.pyplot as plt
 # 1. Charger données
 # ===============================
 df = pd.read_csv("C:/Users/lilic/Bureau/Dossiers/Dossiers non-triés/X/2025-09-4A/Projet Stat'App/Clone Git/Stat-App/Data_clean/df_long_indicators vs tarifs.csv")
+
+
+##Attention Je mets juste mon chemin perso pour tester ce que ça donne
+df = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App-1/Data_clean/df_long_indicators vs tarifs.csv")
+
+
+
 df = df.drop(columns=["Unnamed: 0"], errors="ignore")
+
+
 
 # ===============================
 # 2. Format panel
@@ -157,7 +166,7 @@ plt.ylabel(f"Response of {variable_y}")
 plt.title("Impulse Response to a Tariff Shock")
 plt.legend()
 
-#plt.show()
+plt.show()
 
 
 
