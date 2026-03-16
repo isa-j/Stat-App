@@ -152,9 +152,15 @@ def local_projection(y_var, label, H=5, ci=0.90):
         label: label used for naming intermediate columns and plots.
         H: horizon in years.
         ci: confidence level for bands (0.90 or 0.95).
+
+    Returns:
+        betas: list of coefficients for each horizon.
+        lower_ci: list of lower bounds.
+        upper_ci: list of upper bounds.
+        n_obs: list of number of observations for each horizon.
     """
 
-    betas, lower_ci, upper_ci = [], [], []
+    betas, lower_ci, upper_ci, n_obs = [], [], [], []
 
     # Compute z-score for CI (use standard values to avoid scipy dependency)
     z_map = {0.90: 1.645, 0.95: 1.96}
@@ -194,6 +200,7 @@ def local_projection(y_var, label, H=5, ci=0.90):
             betas.append(np.nan)
             lower_ci.append(np.nan)
             upper_ci.append(np.nan)
+            n_obs.append(0)
             continue
 
         y = data[f"dep_{label}_{k}"]
@@ -208,13 +215,16 @@ def local_projection(y_var, label, H=5, ci=0.90):
         betas.append(beta)
         lower_ci.append(beta - z * se)
         upper_ci.append(beta + z * se)
+        n_obs.append(len(data))
 
-    return betas, lower_ci, upper_ci
+    return betas, lower_ci, upper_ci, n_obs
 
 
 # ---- IRF pour log GDP (Jordà 2005)
 H = 6
-betas_gdp, lower_gdp, upper_gdp = local_projection("log_gdp", "log_gdp", H=H, ci=0.90)
+betas_gdp, lower_gdp, upper_gdp, n_obs_gdp = local_projection("log_gdp", "log_gdp", H=H, ci=0.90)
+
+print(f"Nombre d'observations par horizon pour log GDP: {n_obs_gdp}")
 
 plt.figure()
 horizons = range(H + 1)
@@ -230,7 +240,9 @@ plt.show()
 
 # ---- IRF pour chômage (même spécification)
 H = 6
-betas_unemp, lower_unemp, upper_unemp = local_projection("unemployment", "unemployment", H=H, ci=0.90)
+betas_unemp, lower_unemp, upper_unemp, n_obs_unemp = local_projection("unemployment", "unemployment", H=H, ci=0.90)
+
+print(f"Nombre d'observations par horizon pour chômage: {n_obs_unemp}")
 
 plt.figure()
 plt.plot(horizons, betas_unemp, label="IRF (unemployment)", linewidth=2)
