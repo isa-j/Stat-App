@@ -38,8 +38,8 @@ def base_lagged(lag, name_y):
 
     cols = (
         ["delta_tariff"] +
-        [f"tariff_lag{i}" for i in range(1, lag + 1)] +
- #       [f"delta_tariff_lag{i}" for i in range(1, lag + 1)] +
+ #       [f"tariff_lag{i}" for i in range(1, lag + 1)] +
+       [f"delta_tariff_lag{i}" for i in range(1, lag + 1)] +
         [f"delta_y_lag{i}" for i in range(1, lag + 1)])
 
     data = df[cols].dropna()
@@ -112,9 +112,9 @@ variable_y= "Prix à la consommation"
 
 AIC=[]
 BIC=[]
-lag_value=range(1,22)
+lag_value=range(1,15)
 
-for i in range(1,22):
+for i in range(1,15):
     betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(1, i, variable_y )
     AIC.append(aic[0])
     BIC.append(bic[0])
@@ -133,7 +133,6 @@ plt.show()
 # ===============================
 H=5
 lag =2
-
 
 betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y )
 
@@ -157,7 +156,7 @@ plt.ylabel(f"Response of {variable_y}")
 plt.title("Impulse Response to a Tariff Shock")
 plt.legend()
 
-#plt.show()
+plt.show()
 
 
 
