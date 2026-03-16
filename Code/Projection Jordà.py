@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 # ===============================
 # 1. Charger données
 # ===============================
-df = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/df_long_indicators vs tarifs.csv")
+df = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/df_long_indicators_vs_tarifs_imputed.csv")
 df = df.drop(columns=["Unnamed: 0"], errors="ignore")
 
 # ===============================
@@ -144,6 +144,24 @@ df["ca_lag1"] = df.groupby(level=0)["ca"].shift(1)
 df["ca_lag2"] = df.groupby(level=0)["ca"].shift(2)
 
 
+
+
+# Diagnostiquer les données manquantes
+print("Missing values par colonne :")
+print(df.isnull().sum())
+
+print("\nNombre total de lignes avant dropna :")
+print(len(df))
+
+# Simuler dropna sur les colonnes de régression (pour horizon 0)
+test_cols = ["delta_tariff", "delta_log_gdp_lag1", "delta_log_gdp_lag2", "tariff_lag1", "tariff_lag2", "delta_exchange_lag1", "delta_exchange_lag2", "ca_lag1", "ca_lag2"]
+test_data = df[test_cols].dropna()
+print(f"\nLignes restantes après dropna sur {len(test_cols)} colonnes : {len(test_data)}")
+
+
+
+
+
 def local_projection(y_var, label, H=5, ci=0.90):
     """Estimate local projection IRF for y_var to delta_tariff using Jordà (2005) specification.
 
@@ -160,7 +178,7 @@ def local_projection(y_var, label, H=5, ci=0.90):
         n_obs: list of number of observations for each horizon.
     """
 
-    betas, lower_ci, upper_ci, n_obs = [], [], [], []
+    betas, lower_ci, upper_ci, n_obs, ses, pvals = [], [], [], [], [], []
 
     # Compute z-score for CI (use standard values to avoid scipy dependency)
     z_map = {0.90: 1.645, 0.95: 1.96}
@@ -201,6 +219,8 @@ def local_projection(y_var, label, H=5, ci=0.90):
             lower_ci.append(np.nan)
             upper_ci.append(np.nan)
             n_obs.append(0)
+            ses.append(np.nan)
+            pvals.append(np.nan)
             continue
 
         y = data[f"dep_{label}_{k}"]
@@ -211,20 +231,34 @@ def local_projection(y_var, label, H=5, ci=0.90):
 
         beta = res.params["delta_tariff"]
         se = res.std_errors["delta_tariff"]
+        pval = res.pvalues["delta_tariff"]
 
         betas.append(beta)
         lower_ci.append(beta - z * se)
         upper_ci.append(beta + z * se)
         n_obs.append(len(data))
+        ses.append(se)
+        pvals.append(pval)
 
-    return betas, lower_ci, upper_ci, n_obs
+    return betas, lower_ci, upper_ci, n_obs, ses, pvals
 
 
 # ---- IRF pour log GDP (Jordà 2005)
 H = 6
-betas_gdp, lower_gdp, upper_gdp, n_obs_gdp = local_projection("log_gdp", "log_gdp", H=H, ci=0.90)
+betas_gdp, lower_gdp, upper_gdp, n_obs_gdp, ses_gdp, pvals_gdp = local_projection("log_gdp", "log_gdp", H=H, ci=0.90)
 
 print(f"Nombre d'observations par horizon pour log GDP: {n_obs_gdp}")
+
+# Tableau régression pour log GDP
+table_gdp = pd.DataFrame({
+    "Horizon": range(H + 1),
+    "Beta": betas_gdp,
+    "SE": ses_gdp,
+    "p-value": pvals_gdp,
+    "N_obs": n_obs_gdp
+})
+print("\nTableau de régression pour log GDP:")
+print(table_gdp.to_string(index=False))
 
 plt.figure()
 horizons = range(H + 1)
@@ -240,9 +274,20 @@ plt.show()
 
 # ---- IRF pour chômage (même spécification)
 H = 6
-betas_unemp, lower_unemp, upper_unemp, n_obs_unemp = local_projection("unemployment", "unemployment", H=H, ci=0.90)
+betas_unemp, lower_unemp, upper_unemp, n_obs_unemp, ses_unemp, pvals_unemp = local_projection("unemployment", "unemployment", H=H, ci=0.90)
 
 print(f"Nombre d'observations par horizon pour chômage: {n_obs_unemp}")
+
+# Tableau régression pour chômage
+table_unemp = pd.DataFrame({
+    "Horizon": range(H + 1),
+    "Beta": betas_unemp,
+    "SE": ses_unemp,
+    "p-value": pvals_unemp,
+    "N_obs": n_obs_unemp
+})
+print("\nTableau de régression pour chômage:")
+print(table_unemp.to_string(index=False))
 
 plt.figure()
 plt.plot(horizons, betas_unemp, label="IRF (unemployment)", linewidth=2)

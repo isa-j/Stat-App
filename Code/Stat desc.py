@@ -165,6 +165,7 @@ plt.show()
 #Peu concluant, on va passer à des régressions contrôlées avec un peu de taff de preprocessing avant
 import pandas as pd
 df_final = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/Indicators and tarifs V3.csv")
+print(f"Après chargement V3.csv: {len(df_final)}")
 
 df_final[df_final["Mesure"] == "Produit intérieur brut, volume"]["Unité de mesure"].unique()
 
@@ -184,18 +185,26 @@ vars_utiles = [
 ]
 
 df_sub = df_final[df_final['Mesure'].isin(vars_utiles)]
+print(f"Après sélection vars_utiles: {len(df_sub)}")
 
 #for col in df_sub.columns : 
    # print (df_sub[col].unique())
 
 df_sub = df_sub.drop(columns=['TIME_PERIOD', 'BASE_PER'])
+print(f"Après drop colonnes: {len(df_sub)}")
 
 df_sub = df_sub[(df_sub["Statut d'observation"] == "Normal value") 
-                & (df_sub["Activité économique"].isin(["Non applicable", "Total - ensemble des activités"]))
-                & (df_sub["Ajustement"].isin(["Corrigé des variations saisonnières et des effets de calendrier", "N'est pas applicable"]))
                 & (df_sub["Indicator Name"] == 'Weighted mean tariff rate (MFN vs Applied)')
                 & (df_sub["tariff_type"] == "AR")
                 ]
+print(f"Après filtres relaxés (statut, indicator, tariff_type): {len(df_sub)}")
+
+# Vérifier les doublons avant pivot
+duplicates = df_sub.groupby(['Country Code', 'year', 'Mesure']).size()
+print(f"Nombre de groupes avec >1 occurrence: {(duplicates > 1).sum()}")
+if (duplicates > 1).any():
+    print("Exemples de doublons:")
+    print(duplicates[duplicates > 1].head())
 
 
 #Petit checkup de ce que ça a donné
@@ -210,16 +219,27 @@ df_wide = df_sub.pivot_table(
     columns='Mesure',         # chaque variable devient une colonne
     values='OBS_VALUE'
 ).reset_index()
+print(f"Après pivot_table: {len(df_wide)}")
 
 
 
 tariffs = df_sub[['Country Name', 'Country Code', 'year', 'tariff', 'tariff_lag1', 'delta_tariff']].drop_duplicates()
+print(f"Tariffs uniques: {len(tariffs)}")
 
 df_reg = df_wide.merge(tariffs, on=['Country Name', 'year', 'Country Code'], how='left')
+print(f"Après merge tarifs: {len(df_reg)}")
+
+# Imputer les valeurs manquantes par pays (forward/backward fill)
+for col in df_reg.columns:
+    if col not in ['Country Name', 'Country Code', 'year']:
+        df_reg[col] = df_reg.groupby('Country Code')[col].fillna(method='ffill').fillna(method='bfill')
+
+print(f"Après imputation: {len(df_reg)} (lignes avec au moins une valeur imputée)")
 
 df_reg.head(100)
 
-df_reg.to_csv("df_long_indicators vs tarifs.csv")
+df_reg.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App-1/Data_clean/df_long_indicators_vs_tarifs_imputed.csv")
+print(f"Fichier imputé sauvegardé avec {len(df_reg)} lignes.")
 
 len(df_reg)
 
@@ -245,8 +265,8 @@ Q("Produit intérieur brut, volume")
 model = smf.ols(formula, data=df_reg).fit(cov_type='HC1')
 print(model.summary())
 
-with open("regression_results.txt", "w") as f:
-    f.write(model.summary().as_text())
+#with open("regression_results.txt", "w") as f:
+    #f.write(model.summary().as_text())
 
 
 
@@ -285,8 +305,8 @@ Q("M3")
 model = smf.ols(formula, data=df_reg).fit(cov_type="HC1")
 print(model.summary())
 
-with open("regression2_delta_tarifs_lag.txt", "w") as f:
-    f.write(model.summary().as_text())
+#with open("regression2_delta_tarifs_lag.txt", "w") as f:
+    #f.write(model.summary().as_text())
 
 
 df_reg[ "Produit intérieur brut, volume"].unique()
