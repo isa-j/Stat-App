@@ -193,11 +193,21 @@ print(f"Après sélection vars_utiles: {len(df_sub)}")
 df_sub = df_sub.drop(columns=['TIME_PERIOD', 'BASE_PER'])
 print(f"Après drop colonnes: {len(df_sub)}")
 
-df_sub = df_sub[(df_sub["Statut d'observation"] == "Normal value") 
-                & (df_sub["Indicator Name"] == 'Weighted mean tariff rate (MFN vs Applied)')
-                & (df_sub["tariff_type"] == "AR")
-                ]
-print(f"Après filtres relaxés (statut, indicator, tariff_type): {len(df_sub)}")
+# ----------- Relaxer les filtres pour maximiser le panel -----------
+# - garder plusieurs statuts d'observation (pas seulement "Normal value")
+# - garder toutes les catégories de tariff_type (AR + FN)
+# - conserver l'indicateur tarifaire le plus cohérent (ici le seul présent)
+keep_statuts = [
+    "Normal value",
+    "Provisional value",
+    "Estimated value",
+    "Time series break",
+    "Definition differs",
+]
+df_sub = df_sub[df_sub["Statut d'observation"].isin(keep_statuts)]
+# On garde l'indicateur tarifaire principal (unique dans le jeu de données)
+df_sub = df_sub[df_sub["Indicator Name"] == 'Weighted mean tariff rate (MFN vs Applied)']
+print(f"Après filtres relaxés (statut + indicator, tous tariff_type conservés): {len(df_sub)}")
 
 # Vérifier les doublons avant pivot
 duplicates = df_sub.groupby(['Country Code', 'year', 'Mesure']).size()
@@ -223,25 +233,36 @@ print(f"Après pivot_table: {len(df_wide)}")
 
 
 
-tariffs = df_sub[['Country Name', 'Country Code', 'year', 'tariff', 'tariff_lag1', 'delta_tariff']].drop_duplicates()
+tariffs = df_sub[['Country Name', 'Country Code', 'year', 'tariff']].drop_duplicates()
 print(f"Tariffs uniques: {len(tariffs)}")
 
 df_reg = df_wide.merge(tariffs, on=['Country Name', 'year', 'Country Code'], how='left')
 print(f"Après merge tarifs: {len(df_reg)}")
 
-# Imputer les valeurs manquantes par pays (forward/backward fill)
-for col in df_reg.columns:
-    if col not in ['Country Name', 'Country Code', 'year']:
-        df_reg[col] = df_reg.groupby('Country Code')[col].fillna(method='ffill').fillna(method='bfill')
+# Imputation plus douce et plus complète (interpolation + ffill/bfill):
+# - limite lissage à 2 ans pour ne pas inventer des tendances trop longues
+# - en particulier utile quand un pays manque juste 1-2 années dans une série
 
-print(f"Après imputation: {len(df_reg)} (lignes avec au moins une valeur imputée)")
+df_reg = df_reg.sort_values(["Country Code", "year"])
+num_cols = [c for c in df_reg.select_dtypes(include=["number"]).columns if c not in ['year']]
+for col in num_cols:
+    df_reg[col] = (
+        df_reg
+        .groupby('Country Code')[col]
+        .transform(lambda s: s.interpolate(method='linear', limit=2, limit_direction='both'))
+        .ffill()
+        .bfill()
+    )
 
-df_reg.head(100)
+# Recalcul des deltas après imputation pour maximiser les observations
+# (évite de perdre des lignes si delta_tariff était NaN avant imputation)
+df_reg['tariff_lag1'] = df_reg.groupby('Country Code')['tariff'].shift(1)
+df_reg['delta_tariff'] = df_reg['tariff'] - df_reg['tariff_lag1']
 
-df_reg.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App-1/Data_clean/df_long_indicators_vs_tarifs_imputed.csv")
+print(f"Après imputation + recalcul deltas : {len(df_reg)} lignes")
+
+df_reg.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App-1/Data_clean/df_long_indicators_vs_tarifs_imputed.csv", index=False)
 print(f"Fichier imputé sauvegardé avec {len(df_reg)} lignes.")
-
-len(df_reg)
 
 
 
