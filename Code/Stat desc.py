@@ -165,6 +165,7 @@ plt.show()
 #Peu concluant, on va passer à des régressions contrôlées avec un peu de taff de preprocessing avant
 import pandas as pd
 df_final = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/Indicators and tarifs V3.csv")
+print(f"Après chargement V3.csv: {len(df_final)}")
 
 df_final[df_final["Mesure"] == "Produit intérieur brut, volume"]["Unité de mesure"].unique()
 
@@ -184,18 +185,36 @@ vars_utiles = [
 ]
 
 df_sub = df_final[df_final['Mesure'].isin(vars_utiles)]
+print(f"Après sélection vars_utiles: {len(df_sub)}")
 
 #for col in df_sub.columns : 
    # print (df_sub[col].unique())
 
 df_sub = df_sub.drop(columns=['TIME_PERIOD', 'BASE_PER'])
+print(f"Après drop colonnes: {len(df_sub)}")
 
-df_sub = df_sub[(df_sub["Statut d'observation"] == "Normal value") 
-                & (df_sub["Activité économique"].isin(["Non applicable", "Total - ensemble des activités"]))
-                & (df_sub["Ajustement"].isin(["Corrigé des variations saisonnières et des effets de calendrier", "N'est pas applicable"]))
-                & (df_sub["Indicator Name"] == 'Weighted mean tariff rate (MFN vs Applied)')
-                & (df_sub["tariff_type"] == "AR")
-                ]
+# ----------- Relaxer les filtres pour maximiser le panel -----------
+# - garder plusieurs statuts d'observation (pas seulement "Normal value")
+# - garder toutes les catégories de tariff_type (AR + FN)
+# - conserver l'indicateur tarifaire le plus cohérent (ici le seul présent)
+keep_statuts = [
+    "Normal value",
+    "Provisional value",
+    "Estimated value",
+    "Time series break",
+    "Definition differs",
+]
+df_sub = df_sub[df_sub["Statut d'observation"].isin(keep_statuts)]
+# On garde l'indicateur tarifaire principal (unique dans le jeu de données)
+df_sub = df_sub[df_sub["Indicator Name"] == 'Weighted mean tariff rate (MFN vs Applied)']
+print(f"Après filtres relaxés (statut + indicator, tous tariff_type conservés): {len(df_sub)}")
+
+# Vérifier les doublons avant pivot
+duplicates = df_sub.groupby(['Country Code', 'year', 'Mesure']).size()
+print(f"Nombre de groupes avec >1 occurrence: {(duplicates > 1).sum()}")
+if (duplicates > 1).any():
+    print("Exemples de doublons:")
+    print(duplicates[duplicates > 1].head())
 
 
 #Petit checkup de ce que ça a donné
@@ -210,18 +229,40 @@ df_wide = df_sub.pivot_table(
     columns='Mesure',         # chaque variable devient une colonne
     values='OBS_VALUE'
 ).reset_index()
+print(f"Après pivot_table: {len(df_wide)}")
 
 
 
-tariffs = df_sub[['Country Name', 'Country Code', 'year', 'tariff', 'tariff_lag1', 'delta_tariff']].drop_duplicates()
+tariffs = df_sub[['Country Name', 'Country Code', 'year', 'tariff']].drop_duplicates()
+print(f"Tariffs uniques: {len(tariffs)}")
 
 df_reg = df_wide.merge(tariffs, on=['Country Name', 'year', 'Country Code'], how='left')
+print(f"Après merge tarifs: {len(df_reg)}")
 
-df_reg.head(100)
+# Imputation plus douce et plus complète (interpolation + ffill/bfill):
+# - limite lissage à 2 ans pour ne pas inventer des tendances trop longues
+# - en particulier utile quand un pays manque juste 1-2 années dans une série
 
-df_reg.to_csv("df_long_indicators vs tarifs.csv")
+df_reg = df_reg.sort_values(["Country Code", "year"])
+num_cols = [c for c in df_reg.select_dtypes(include=["number"]).columns if c not in ['year']]
+for col in num_cols:
+    df_reg[col] = (
+        df_reg
+        .groupby('Country Code')[col]
+        .transform(lambda s: s.interpolate(method='linear', limit=2, limit_direction='both'))
+        .ffill()
+        .bfill()
+    )
 
-len(df_reg)
+# Recalcul des deltas après imputation pour maximiser les observations
+# (évite de perdre des lignes si delta_tariff était NaN avant imputation)
+df_reg['tariff_lag1'] = df_reg.groupby('Country Code')['tariff'].shift(1)
+df_reg['delta_tariff'] = df_reg['tariff'] - df_reg['tariff_lag1']
+
+print(f"Après imputation + recalcul deltas : {len(df_reg)} lignes")
+
+df_reg.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App-1/Data_clean/df_long_indicators_vs_tarifs_imputed.csv", index=False)
+print(f"Fichier imputé sauvegardé avec {len(df_reg)} lignes.")
 
 
 
@@ -245,8 +286,8 @@ Q("Produit intérieur brut, volume")
 model = smf.ols(formula, data=df_reg).fit(cov_type='HC1')
 print(model.summary())
 
-with open("regression_results.txt", "w") as f:
-    f.write(model.summary().as_text())
+#with open("regression_results.txt", "w") as f:
+    #f.write(model.summary().as_text())
 
 
 
@@ -285,8 +326,8 @@ Q("M3")
 model = smf.ols(formula, data=df_reg).fit(cov_type="HC1")
 print(model.summary())
 
-with open("regression2_delta_tarifs_lag.txt", "w") as f:
-    f.write(model.summary().as_text())
+#with open("regression2_delta_tarifs_lag.txt", "w") as f:
+    #f.write(model.summary().as_text())
 
 
 df_reg[ "Produit intérieur brut, volume"].unique()

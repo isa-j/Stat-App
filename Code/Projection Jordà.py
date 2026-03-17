@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 # ===============================
 # 1. Charger données
 # ===============================
+df = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/df_long_indicators_vs_tarifs_imputed.csv")
 df = pd.read_csv("C:/Users/lilic/Bureau/Dossiers/Dossiers non-triés/X/2025-09-4A/Projet Stat'App/Clone Git/Stat-App/Data_clean/df_long_indicators vs tarifs.csv")
 
 
