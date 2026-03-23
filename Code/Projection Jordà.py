@@ -7,24 +7,44 @@ import matplotlib.pyplot as plt
 # ===============================
 # 1. Charger données
 # ===============================
-df = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/df_long_indicators_vs_tarifs_imputed.csv")
+#df = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/df_long_indicators_vs_tarifs_imputed.csv")
 df = pd.read_csv("C:/Users/lilic/Bureau/Dossiers/Dossiers non-triés/X/2025-09-4A/Projet Stat'App/Clone Git/Stat-App/Data_clean/df_long_indicators vs tarifs.csv")
-
-
-##Attention Je mets juste mon chemin perso pour tester ce que ça donne
-df = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App-1/Data_clean/df_long_indicators vs tarifs.csv")
-
-
+#df = pd.read_csv("C:/Users/lilic/Bureau/Dossiers/Dossiers non-triés/X/2025-09-4A/Projet Stat'App/Clone Git/Stat-App/Data_clean/df_long_indicators_vs_tarifs_imputed.csv")
 
 df = df.drop(columns=["Unnamed: 0"], errors="ignore")
-
-
 
 # ===============================
 # 2. Format panel
 # ===============================
 df = df.set_index(["Country Code", "year"])
+
+#print(df.index[df.index.duplicated()].unique())
+#raise Exception("Stop here")
+A = ['Country Name',
+       'Balance des transactions courantes en pourcentage du PIB',
+       'Cours des actions', 'Emploi',
+       'Importations de biens et services, volume', 'M3',
+       'Prix à la consommation', 'Produit intérieur brut, volume',
+       'Taux de change nominal', 'Taux de chômage', 'tariff', 'tariff_lag1',
+       'delta_tariff']
+B = ['Country Name',
+       'Balance_paiements',
+       'Actions', 'Emploi',
+       'Importations', 'M3',
+       'IPC', 'PIB',
+       'Taux_change', 'Chômage', 'tariff', 'tariff_lag1',
+       'delta_tariff']
+
+mapping = dict(zip(A, B))
+
+df = df.rename(columns=mapping)
+df["PIB"] = np.log(df["PIB"])
+df["IPC"] = np.log(df["IPC"])
+
+df = df.drop(columns=['Actions', 'Importations','M3'])
+
 print(df.columns)
+
 # ===============================
 # 3. Construire variables de base
 # ===============================
@@ -48,9 +68,45 @@ def base_lagged(lag, name_y):
 
     cols = (
         ["delta_tariff"] +
- #       [f"tariff_lag{i}" for i in range(1, lag + 1)] +
-       [f"delta_tariff_lag{i}" for i in range(1, lag + 1)] +
+ #      [f"tariff_lag{i}" for i in range(1, lag + 1)] +
+        [f"delta_tariff_lag{i}" for i in range(1, lag + 1)] +
         [f"delta_y_lag{i}" for i in range(1, lag + 1)])
+
+    data = df[cols].dropna()
+
+    return data
+
+# ===============================
+# 3.1 Construire variables de base avec les controles
+# ===============================
+col = list(df.columns)
+filtered_cols = [c for c in col if c != 'Country Name' and 'tariff' not in c]
+
+#génère la base de données pour la régression SANS la variable y_{t+k} - y_{t-1}
+# input : nombre de lags >0
+def base_lagged_with_controls(lag):
+
+    for name in filtered_cols:
+
+        # lagged series
+        for i in range(1, lag +1):
+            df[f"{name}_lag{i}"] = df.groupby(level=0)[name].shift(i)
+            df[f"tariff_lag{i}"] = df.groupby(level=0)["tariff"].shift(i)
+
+        #Variation des lagged series
+        df[f"delta_{name}"] = df[name] - df[f"{name}_lag1"]
+        df["delta_tariff"] = df["tariff"] - df["tariff_lag1"]
+        for i in range(1, lag+1):
+            df[f"delta_{name}_lag{i}"] = df.groupby(level=0)[f"delta_{name}"].shift(i)
+            df[f"delta_tariff_lag{i}"] = df.groupby(level=0)["delta_tariff"].shift(i)
+
+    cols = (
+        ["delta_tariff"] +
+        [f"delta_tariff_lag{i}" for i in range(1, lag + 1)])
+    
+    for name in filtered_cols :
+        for i in range(1, lag + 1):
+           cols.append(f"delta_{name}_lag{i}")
 
     data = df[cols].dropna()
 
@@ -80,7 +136,7 @@ def projection_locale(H, lag, name_y):
         # Variable dépendante : y_{t+k} - y_{t-1}
         df[f"dep_k{k}"] = df[f"y_lead{k}"] - df["y_lag1"]
 
-        data = base_lagged(lag, name_y)
+        data = base_lagged_with_controls(lag)
         data[f"dep_k{k}"] = df[f"dep_k{k}"]
         data = data.dropna()
 
@@ -118,31 +174,32 @@ def projection_locale(H, lag, name_y):
 # ===============================
 # 5. Choose lag value
 # ===============================
-variable_y= "Prix à la consommation"
+# variable_y= "IPC"
 
-AIC=[]
-BIC=[]
-lag_value=range(1,15)
+# AIC=[]
+# BIC=[]
+# lag_value=range(1,15)
 
-for i in range(1,15):
-    betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(1, i, variable_y )
-    AIC.append(aic[0])
-    BIC.append(bic[0])
+# for i in range(1,15):
+#     betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(1, i, variable_y )
+#     AIC.append(aic[0])
+#     BIC.append(bic[0])
 
-plt.figure()
-plt.plot(lag_value, AIC, label="AIC", linewidth=2)
-plt.plot(lag_value, BIC, label="BIC", linewidth=2)
+# plt.figure()
+# plt.plot(lag_value, AIC, label="AIC", linewidth=2)
+# plt.plot(lag_value, BIC, label="BIC", linewidth=2)
 
-plt.legend()
+# plt.legend()
 
-plt.show()
+# plt.show()
 
 
 # ===============================
 # 6. Plot IRF
 # ===============================
 H=5
-lag =2
+lag = 1
+variable_y = "IPC"
 
 betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y )
 
