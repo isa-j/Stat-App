@@ -86,18 +86,7 @@ df_merged.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_cl
 
 
 
-#### Tarifs product by product ####
-import pandas as pd
 
-path_product_1988 = "/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data/2662006_A69F6B0B-8/MFN_H0_EUN_1988/JobID-43639_MFN_H0_EUN_1988.CSV"
-df_1988 = pd.read_csv(path_product_1988)
-
-# df_prod = fichier product-level
-df_country_year = df_1988.groupby(['Reporter_ISO_N', 'Year']).apply(
-    lambda x: (x['SimpleAverage'] * x['TotalNoOfValidLines']).sum() / x['TotalNoOfValidLines'].sum()
-)
-
-df_country_year
 
 
 
