@@ -16,6 +16,10 @@ df = df.drop(columns=["Unnamed: 0"], errors="ignore")
 # ===============================
 # 2. Format panel
 # ===============================
+# - Changement des noms de variables
+# - Transformation log de certaines variables
+# - sélection des pays
+
 df = df.set_index(["Country Code", "year"])
 
 #print(df.index[df.index.duplicated()].unique())
@@ -42,6 +46,9 @@ df["PIB"] = np.log(df["PIB"])
 df["IPC"] = np.log(df["IPC"])
 
 df = df.drop(columns=['Actions', 'Importations','M3'])
+
+country = ["ESP", "GRC", "LUX", "CZE", "FRA", "JPN", "MEX", "NLD", "USA", "DEU","AUS", "AUT", "CAN", "KOR", "FIN", "ITA", "NOR", "NZL", "GBR", "SWE"] #IND less availaible in the current years
+df = df.loc[df.index.get_level_values("Country Code").isin(country)]
 
 print(df.columns)
 
@@ -82,9 +89,10 @@ def base_lagged(lag, name_y):
 col = list(df.columns)
 filtered_cols = [c for c in col if c != 'Country Name' and 'tariff' not in c]
 
-#génère la base de données pour la régression SANS la variable y_{t+k} - y_{t-1}
-# input : nombre de lags >0
-def base_lagged_with_controls(lag):
+#génère la base de données avec les variables de controle pour la régression SANS la variable y_{t+k} - y_{t-1}
+# input : nombre de lags >0, base
+
+def base_lagged_with_controls(lag, df):
 
     for name in filtered_cols:
 
@@ -117,7 +125,7 @@ def base_lagged_with_controls(lag):
 # 4. Local Projections
 # ===============================
 
-def projection_locale(H, lag, name_y):
+def projection_locale(H, lag, name_y, df):
     betas = []
     lower_ci95 = []
     upper_ci95 = []
@@ -136,7 +144,7 @@ def projection_locale(H, lag, name_y):
         # Variable dépendante : y_{t+k} - y_{t-1}
         df[f"dep_k{k}"] = df[f"y_lead{k}"] - df["y_lag1"]
 
-        data = base_lagged_with_controls(lag)
+        data = base_lagged_with_controls(lag, df)
         data[f"dep_k{k}"] = df[f"dep_k{k}"]
         data = data.dropna()
 
@@ -193,15 +201,29 @@ def projection_locale(H, lag, name_y):
 
 # plt.show()
 
+# ===============================
+# 6. Robustesse
+# ===============================
+#Analyse spécifique des pays européens
+
+print(df.index.get_level_values("Country Code").unique())
+
+
+europe = ["ESP", "LUX", "FRA" , "NLD", "DEU", "AUT",  "FIN", "ITA", "NOR",  "SWE", "CZE" , "GRC"]  #IND less availaible in the current years
+autre = ["JPN", "MEX", "USA", "AUS", "CAN", "KOR", "NZL", "GBR"]
+
+
+df_europe = df.loc[df.index.get_level_values("Country Code").isin(europe)].copy()
+df_autre = df.loc[df.index.get_level_values("Country Code").isin(autre)].copy()
 
 # ===============================
-# 6. Plot IRF
+# 7. Plot IRF
 # ===============================
 H=5
 lag = 1
-variable_y = "IPC"
+variable_y = "PIB"
 
-betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y )
+betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y, df)
 
 plt.figure()
 
@@ -224,6 +246,8 @@ plt.title("Impulse Response to a Tariff Shock")
 plt.legend()
 
 plt.show()
+
+
 
 
 
