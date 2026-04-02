@@ -181,7 +181,8 @@ vars_utiles = [
     'Prix à la consommation', 
     'Cours des actions', 
     'Importations de biens et services, volume', 
-    'M3'
+    'M3',
+    'Emploi'
 ]
 
 df_sub = df_final[df_final['Mesure'].isin(vars_utiles)]
@@ -207,7 +208,9 @@ keep_statuts = [
 df_sub = df_sub[df_sub["Statut d'observation"].isin(keep_statuts)]
 # On garde l'indicateur tarifaire principal (unique dans le jeu de données)
 df_sub = df_sub[df_sub["Indicator Name"] == 'Weighted mean tariff rate (MFN vs Applied)']
-print(f"Après filtres relaxés (statut + indicator, tous tariff_type conservés): {len(df_sub)}")
+# Garder les deux types de tarifs (AR et FN) pour tracer/contrôler ensuite
+df_sub = df_sub[df_sub["tariff_type"].isin(["AR", "FN"])]
+print(f"Après filtres relaxés (statut + indicator + tariff_type AR/FN): {len(df_sub)}")
 
 # Vérifier les doublons avant pivot
 duplicates = df_sub.groupby(['Country Code', 'year', 'Mesure']).size()
@@ -233,11 +236,26 @@ print(f"Après pivot_table: {len(df_wide)}")
 
 
 
-tariffs = df_sub[['Country Name', 'Country Code', 'year', 'tariff']].drop_duplicates()
-print(f"Tariffs uniques: {len(tariffs)}")
+# Conserver les tarifs AR et FN séparés, pour identifier le type exact
+tariffs = (
+    df_sub[['Country Name', 'Country Code', 'year', 'tariff_type', 'tariff']]
+    .drop_duplicates()
+    .pivot_table(index=['Country Name', 'Country Code', 'year'], columns='tariff_type', values='tariff')
+    .reset_index()
+)
+tariffs.columns.name = None
+if 'AR' in tariffs.columns:
+    tariffs = tariffs.rename(columns={'AR': 'tariff_AR'})
+if 'FN' in tariffs.columns:
+    tariffs = tariffs.rename(columns={'FN': 'tariff_FN'})
+tariffs['tariff'] = tariffs.get('tariff_FN').fillna(tariffs.get('tariff_AR'))
+print(f"Tariffs lines (AR+FN): {len(tariffs)}")
 
 df_reg = df_wide.merge(tariffs, on=['Country Name', 'year', 'Country Code'], how='left')
 print(f"Après merge tarifs: {len(df_reg)}")
+
+# Crée une variable tarif principal (FN > AR), utile pour calculs sur lag/delta
+df_reg['tariff_selected'] = df_reg['tariff_FN'].fillna(df_reg['tariff_AR'])
 
 # Imputation plus douce et plus complète (interpolation + ffill/bfill):
 # - limite lissage à 2 ans pour ne pas inventer des tendances trop longues
@@ -256,13 +274,18 @@ for col in num_cols:
 
 # Recalcul des deltas après imputation pour maximiser les observations
 # (évite de perdre des lignes si delta_tariff était NaN avant imputation)
-df_reg['tariff_lag1'] = df_reg.groupby('Country Code')['tariff'].shift(1)
-df_reg['delta_tariff'] = df_reg['tariff'] - df_reg['tariff_lag1']
+df_reg['tariff_lag1'] = df_reg.groupby('Country Code')['tariff_selected'].shift(1)
+df_reg['delta_tariff'] = df_reg['tariff_selected'] - df_reg['tariff_lag1']
+
+# On ne conserve pas la colonne redondante tariff (source pionnière), on garde AR/FN + selected
+df_reg = df_reg.drop(columns=['tariff'], errors='ignore')
 
 print(f"Après imputation + recalcul deltas : {len(df_reg)} lignes")
 
-df_reg.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App-1/Data_clean/df_long_indicators_vs_tarifs_imputed.csv", index=False)
-print(f"Fichier imputé sauvegardé avec {len(df_reg)} lignes.")
+
+#NB : Tariff_slected = FN si dispo, sinon AR ; en vrai on s'en fiche au pire
+df_reg.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App-1/Data_clean/df_long_indicators_vs_tarifs_31mars.csv", index=False)
+print(f"Fichier 31 mars (avec Emploi et tariff_type FN) sauvegardé avec {len(df_reg)} lignes.")
 
 
 
