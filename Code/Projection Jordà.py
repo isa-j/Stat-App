@@ -50,11 +50,23 @@ df = df.rename(columns=mapping)
 df = df.drop(columns=['Actions', 'Importations','M3', 'lag_AR','delta_AR','lag_FN','delta_FN', "Chômage"])
 
 country = ["ESP", "GRC", "LUX", "CZE", "FRA", "JPN", "MEX", "NLD", "USA", "DEU","AUS", "AUT", "CAN", "KOR", "FIN", "ITA", "NOR", "NZL", "GBR", "SWE"] #IND less availaible in the current years
+PIB_1995 =[803136997375,167488456016,30604417413, 118281953160, 1749300344479, 3785636263361, 724231953299, 524315389158,11052644207040,2614281254585, 709528553282, 267089386116, 955122057479, 627888532992, 152674521262, 1671695507214, 254491639971, 102929582187, 1935631814547, 309511442391   ]
 df = df.loc[df.index.get_level_values("Country Code").isin(country)]
+gdp_series = pd.Series(PIB_1995, index=country)
+print(gdp_series)
 
-df["PIB"] = np.log(df["PIB"])
+for c in country:
+    df.loc[(c, 1995), "PIB_new"] = gdp_series.loc[c]
+    for i in range(1996, 2023):
+        df.loc[(c, i), "PIB_new"] = df.loc[(c, i-1), "PIB_new"]* (1 + df.loc[(c, i), "PIB"]/100)
+        print(df.loc[(c, i), "PIB"])
+
+
+
+df["PIB"] = np.log(df["PIB_new"])
 df["IPC"] = np.log(df["IPC"])
-print(df.columns)
+#df = df.drop("PIB_new")
+print(df)
 
 # ===============================
 # 3. Construire variables de base
@@ -186,14 +198,15 @@ def projection_locale(H, lag, name_y, df, tariff_type):
 # ===============================
 # 5. Choose lag value
 # ===============================
-# variable_y= "IPC"
+# variable_y= "PIB"
+# tariff_type = 'tariff_AR'
 
 # AIC=[]
 # BIC=[]
-# lag_value=range(1,15)
+# lag_value=range(1,10)
 
-# for i in range(1,15):
-#     betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(1, i, variable_y )
+# for i in range(1,10):
+#     betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(1, i,  variable_y, df, tariff_type )
 #     AIC.append(aic[0])
 #     BIC.append(bic[0])
 
@@ -225,10 +238,10 @@ df_autre = df.loc[df.index.get_level_values("Country Code").isin(autre)].copy()
 # ===============================
 H=5
 lag = 1
-tariff_type = 'tariff_FN'
+tariff_type = 'tariff_AR'
 variable_y = "IPC"
 
-betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y, df, tariff_type)
+betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y, df_europe, tariff_type)
 
 plt.figure()
 
