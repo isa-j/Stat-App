@@ -248,42 +248,29 @@ if 'AR' in tariffs.columns:
     tariffs = tariffs.rename(columns={'AR': 'tariff_AR'})
 if 'FN' in tariffs.columns:
     tariffs = tariffs.rename(columns={'FN': 'tariff_FN'})
-tariffs['tariff'] = tariffs.get('tariff_FN').fillna(tariffs.get('tariff_AR'))
+# Pas de colonne tarif sélectionné : on conserve deux séries distinctes AR et FN
+tariffs = tariffs.drop(columns=['tariff'], errors='ignore')
 print(f"Tariffs lines (AR+FN): {len(tariffs)}")
 
 df_reg = df_wide.merge(tariffs, on=['Country Name', 'year', 'Country Code'], how='left')
 print(f"Après merge tarifs: {len(df_reg)}")
 
-# Crée une variable tarif principal (FN > AR), utile pour calculs sur lag/delta
-df_reg['tariff_selected'] = df_reg['tariff_FN'].fillna(df_reg['tariff_AR'])
-
-# Imputation plus douce et plus complète (interpolation + ffill/bfill):
-# - limite lissage à 2 ans pour ne pas inventer des tendances trop longues
-# - en particulier utile quand un pays manque juste 1-2 années dans une série
-
+# Calcul lag + delta par type de tarif (sans imputation)
 df_reg = df_reg.sort_values(["Country Code", "year"])
-num_cols = [c for c in df_reg.select_dtypes(include=["number"]).columns if c not in ['year']]
-for col in num_cols:
-    df_reg[col] = (
-        df_reg
-        .groupby('Country Code')[col]
-        .transform(lambda s: s.interpolate(method='linear', limit=2, limit_direction='both'))
-        .ffill()
-        .bfill()
-    )
 
-# Recalcul des deltas après imputation pour maximiser les observations
-# (évite de perdre des lignes si delta_tariff était NaN avant imputation)
-df_reg['tariff_lag1'] = df_reg.groupby('Country Code')['tariff_selected'].shift(1)
-df_reg['delta_tariff'] = df_reg['tariff_selected'] - df_reg['tariff_lag1']
+df_reg['lag_AR'] = df_reg.groupby('Country Code')['tariff_AR'].shift(1)
+df_reg['delta_AR'] = df_reg['tariff_AR'] - df_reg['lag_AR']
 
-# On ne conserve pas la colonne redondante tariff (source pionnière), on garde AR/FN + selected
+df_reg['lag_FN'] = df_reg.groupby('Country Code')['tariff_FN'].shift(1)
+df_reg['delta_FN'] = df_reg['tariff_FN'] - df_reg['lag_FN']
+
+# On ne garde pas l'ancienne colonne 'tariff' si elle existe
 df_reg = df_reg.drop(columns=['tariff'], errors='ignore')
 
-print(f"Après imputation + recalcul deltas : {len(df_reg)} lignes")
+print(f"Après calcul lag/delta AR/FN (pas d'imputation) : {len(df_reg)} lignes")
 
 
-#NB : Tariff_slected = FN si dispo, sinon AR ; en vrai on s'en fiche au pire
+
 df_reg.to_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App-1/Data_clean/df_long_indicators_vs_tarifs_31mars.csv", index=False)
 print(f"Fichier 31 mars (avec Emploi et tariff_type FN) sauvegardé avec {len(df_reg)} lignes.")
 
@@ -298,7 +285,7 @@ import statsmodels.formula.api as smf
 
 formula = """
 Q("Produit intérieur brut, volume") 
-~ delta_tariff
+~ delta_FN
 + Q("Taux de chômage")
 + Q("Balance des transactions courantes en pourcentage du PIB")
 + Q("Taux de change nominal")
@@ -319,16 +306,16 @@ print(model.summary())
 # pour représenter le délai avant que les effets
 #du protectionnisme se fassent sentir
 
-#On crée le lag du delta_tariff
+#On crée le lag du delta_FN
 df_reg = df_reg.sort_values(["Country Code", "year"])
 
-df_reg["delta_tariff_lag1"] = (
+df_reg["delta_FN_lag1"] = (
     df_reg
-    .groupby("Country Code")["delta_tariff"]
+    .groupby("Country Code")["delta_FN"]
     .shift(1)
 )
 #Petit checkup
-df_reg[["Country Name", "year", "delta_tariff", "delta_tariff_lag1"]].head(15)
+df_reg[["Country Name", "year", "delta_FN", "delta_FN_lag1"]].head(15)
 
 
 len(df_reg)
@@ -337,7 +324,7 @@ import statsmodels.formula.api as smf
 
 formula = """
 Q("Produit intérieur brut, volume") ~
-delta_tariff_lag1 +
+delta_FN_lag1 +
 Q("Taux de chômage") +
 Q("Prix à la consommation") +
 Q("M3") 
