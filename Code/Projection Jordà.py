@@ -46,14 +46,14 @@ B = ['Country Name',
 mapping = dict(zip(A, B))
 
 df = df.rename(columns=mapping)
-df["PIB"] = np.log(df["PIB"])
-df["IPC"] = np.log(df["IPC"])
 
-df = df.drop(columns=['Actions', 'Importations','M3', 'tariff_selected', 'tariff_lag1', 'delta_tariff'])
+df = df.drop(columns=['Actions', 'Importations','M3', 'lag_AR','delta_AR','lag_FN','delta_FN', "Chômage"])
 
 country = ["ESP", "GRC", "LUX", "CZE", "FRA", "JPN", "MEX", "NLD", "USA", "DEU","AUS", "AUT", "CAN", "KOR", "FIN", "ITA", "NOR", "NZL", "GBR", "SWE"] #IND less availaible in the current years
 df = df.loc[df.index.get_level_values("Country Code").isin(country)]
 
+df["PIB"] = np.log(df["PIB"])
+df["IPC"] = np.log(df["IPC"])
 print(df.columns)
 
 # ===============================
@@ -149,7 +149,7 @@ def projection_locale(H, lag, name_y, df, tariff_type):
         df[f"dep_k{k}"] = df[f"y_lead{k}"] - df["y_lag1"]
 
         data = base_lagged_with_controls(lag, df, tariff_type)
-        data[f"dep_k{k}"] = df[f"dep_k{k}"]
+        data[f"dep_k{k}"] = df[f"dep_k{k}"]       
         data = data.dropna()
 
         y = data[f"dep_k{k}"]
@@ -225,8 +225,8 @@ df_autre = df.loc[df.index.get_level_values("Country Code").isin(autre)].copy()
 # ===============================
 H=5
 lag = 1
-tariff_type = 'tariff_AR'
-variable_y = "PIB"
+tariff_type = 'tariff_FN'
+variable_y = "IPC"
 
 betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y, df, tariff_type)
 
@@ -246,8 +246,8 @@ plt.fill_between(horizons, lower_ci95, upper_ci95, alpha=0.3, label="95% confide
 plt.axhline(0)
 
 plt.xlabel("Horizon (years)")
-plt.ylabel(f"Response of {variable_y}")
-plt.title("Impulse Response to a Tariff Shock")
+plt.ylabel("Response of consummer price index (in log)")
+plt.title("Impulse response to a tariff shock (most favoured nation rate)")
 plt.legend()
 
 plt.show()
