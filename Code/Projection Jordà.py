@@ -24,7 +24,7 @@ df = df[df["year"] >= 1995]
 df = df[df["year"] <= 2022]
 df = df.set_index(["Country Code", "year"])
 
-#print(df.columns)
+print(df.columns)
 #raise Exception("Stop here")
 A = ['Country Name',
        'Balance des transactions courantes en pourcentage du PIB',
@@ -229,19 +229,32 @@ print(df.index.get_level_values("Country Code").unique())
 europe = ["ESP", "LUX", "FRA" , "NLD", "DEU", "AUT",  "FIN", "ITA", "NOR",  "SWE", "CZE" , "GRC"]  #IND less availaible in the current years
 autre = ["JPN", "MEX", "USA", "AUS", "CAN", "KOR", "NZL", "GBR"]
 
+pos_balance = []
+neg_balance = []
+
+for c in df.index.get_level_values("Country Code").unique():
+    df_sub = df.loc[df.index.get_level_values("Country Code") == c]
+    mean = df_sub["Balance_paiements"].mean()
+    if mean>0 :
+        pos_balance.append(c)
+    else :
+        neg_balance.append(c)
+    
 
 df_europe = df.loc[df.index.get_level_values("Country Code").isin(europe)].copy()
 df_autre = df.loc[df.index.get_level_values("Country Code").isin(autre)].copy()
+df_pos = df.loc[df.index.get_level_values("Country Code").isin(pos_balance)].copy()
+df_neg = df.loc[df.index.get_level_values("Country Code").isin(neg_balance)].copy()
 
 # ===============================
 # 7. Plot IRF
 # ===============================
 H=5
 lag = 1
-tariff_type = 'tariff_AR'
+tariff_type = 'tariff_FN'
 variable_y = "IPC"
 
-betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y, df_europe, tariff_type)
+betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y, df_neg, tariff_type)
 
 plt.figure()
 
