@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 # ===============================
 # 1. Charger données
 # ===============================
-df = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/df_long_indicators_vs_tarifs_31mars.csv")
+df = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App-1/Data_clean/df_long_indicators_vs_tarifs_31mars.csv")
 #df = pd.read_csv("C:/Users/lilic/Bureau/Dossiers/Dossiers non-triés/X/2025-09-4A/Projet Stat'App/Clone Git/Stat-App/Data_clean/df_long_indicators_vs_tarifs_31mars.csv")
 #df = pd.read_csv("C:/Users/lilic/Bureau/Dossiers/Dossiers non-triés/X/2025-09-4A/Projet Stat'App/Clone Git/Stat-App/Data_clean/df_long_indicators_vs_tarifs_imputed.csv")
 
@@ -239,10 +239,11 @@ df_autre = df.loc[df.index.get_level_values("Country Code").isin(autre)].copy()
 H=5
 lag = 1
 tariff_type = 'tariff_AR'
-variable_y = "IPC"
+variable_y = "PIB_new"
 
+#print(df_europe.head(50))
 
-betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y )
+betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y, df_autre, tariff_type )
 
 plt.figure()
 
@@ -260,8 +261,8 @@ plt.fill_between(horizons, lower_ci95, upper_ci95, alpha=0.3, label="95% confide
 plt.axhline(0)
 
 plt.xlabel("Horizon (years)")
-plt.ylabel("Response of consummer price index (in log)")
-plt.title("Impulse response to a tariff shock (most favoured nation rate)")
+plt.ylabel("Response of GDP (in volume) in countries outside of the EU")
+plt.title("Impulse response to a tariff shock (AR)")
 plt.legend()
 
 plt.show()
