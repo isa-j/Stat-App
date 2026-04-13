@@ -241,7 +241,8 @@ lag = 1
 tariff_type = 'tariff_AR'
 variable_y = "IPC"
 
-betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y, df_europe, tariff_type)
+
+betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y )
 
 plt.figure()
 
