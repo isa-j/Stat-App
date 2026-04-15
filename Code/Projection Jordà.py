@@ -238,12 +238,12 @@ df_autre = df.loc[df.index.get_level_values("Country Code").isin(autre)].copy()
 # ===============================
 H=5
 lag = 1
-tariff_type = 'tariff_AR'
-variable_y = "PIB_new"
+tariff_type = 'tariff_FN'
+variable_y = "PIB"
 
-#print(df_europe.head(50))
+print(df_europe["PIB"].unique())
 
-betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y, df_autre, tariff_type )
+betas, lower_ci95, upper_ci95, lower_ci90, upper_ci90, aic, bic= projection_locale(H, lag, variable_y, df_europe, tariff_type )
 
 plt.figure()
 
@@ -261,8 +261,8 @@ plt.fill_between(horizons, lower_ci95, upper_ci95, alpha=0.3, label="95% confide
 plt.axhline(0)
 
 plt.xlabel("Horizon (years)")
-plt.ylabel("Response of GDP (in volume) in countries outside of the EU")
-plt.title("Impulse response to a tariff shock (AR)")
+plt.ylabel("Response of the log of GDP in the EU")
+plt.title("Impulse response to a tariff shock (FN)")
 plt.legend()
 
 plt.show()
