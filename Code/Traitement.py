@@ -8,6 +8,7 @@ df_AR = pd.read_excel(path_AR, header = 3)
 
 path_FN = "/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data/API_TM.TAX.FN.xls"
 df_FN = pd.read_excel(path_FN, header = 3)
+print(df_FN["Indicator Name"].values)
 
 print(df_FN.columns)
 print(df_AR.columns)
