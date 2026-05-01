@@ -429,6 +429,13 @@ def create_sectoral_aggregated_df(df_long, df_macro_eu):
     print(f"  Shape finale: {df_sectoral.shape[0]} lignes × {df_sectoral.shape[1]} colonnes")
     print(f"  Colonnes tarifaires: tariff_cereales, tariff_metaux")
     
+    # Nettoyer les colonnes inutiles du fichier précédent
+    cols_to_drop = ['tariff_AR', 'tariff_FN', 'lag_AR', 'delta_AR', 'lag_FN', 'delta_FN']
+    df_sectoral = df_sectoral.drop(columns=cols_to_drop, errors='ignore')
+    
+    print(f"  ✓ Colonnes inutiles supprimées")
+    print(f"  Shape après nettoyage: {df_sectoral.shape[0]} lignes × {df_sectoral.shape[1]} colonnes")
+    
     return df_sectoral
 
 
