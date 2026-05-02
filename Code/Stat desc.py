@@ -165,9 +165,11 @@ plt.show()
 #Peu concluant, on va passer à des régressions contrôlées avec un peu de taff de preprocessing avant
 import pandas as pd
 df_final = pd.read_csv("/Users/roland/Desktop/ENSAE 2A/Statapp/Github/Stat-App/Data_clean/Indicators and tarifs V3.csv")
+
+
 print(f"Après chargement V3.csv: {len(df_final)}")
 
-df_final[df_final["Mesure"] == "Produit intérieur brut, volume"]["Unité de mesure"].unique()
+print(len(df_final[(df_final["Mesure"] == "Prix à la consommation") & (df_final["Unité de mesure"] == "Taux de croissance")]))
 
 
 ####Réorganisation du df
